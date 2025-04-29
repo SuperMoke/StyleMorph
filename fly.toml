@@ -1,0 +1,26 @@
+# fly.toml app configuration file generated for stylemorph on 2025-04-27T10:14:04+08:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'stylemorph'
+primary_region = 'ams'
+
+[build]
+
+[[mounts]]
+  source = 'pb_data'
+  destination = 'pb/pb_data'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

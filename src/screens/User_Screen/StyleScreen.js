@@ -8,16 +8,18 @@ import {
   Alert,
   Platform,
   useWindowDimensions,
+  TouchableOpacity,
 } from "react-native";
-import { Text, Button, Card, useTheme } from "react-native-paper";
+import { Text, Button, Card, useTheme, Snackbar } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { analyzeBodyStyleWithAI } from "../../utils/aiService";
 import { generateClothingImage } from "../../utils/imageGenerationService";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../../components/Header";
+import { favoritesService } from "../../utils/favoritesService";
 
-const StyleScreen = () => {
+const StyleScreen = ({ navigation }) => {
   const theme = useTheme();
   const [image, setImage] = useState(null);
   const [results, setResults] = useState(null);
@@ -26,6 +28,8 @@ const StyleScreen = () => {
   const [generatedImages, setGeneratedImages] = useState({});
   const [hasPermission, setHasPermission] = useState(false);
   const { width } = useWindowDimensions();
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   useEffect(() => {
     requestPermissions();
@@ -176,6 +180,40 @@ const StyleScreen = () => {
     }
   };
 
+  const saveToFavorites = async (index) => {
+    if (!generatedImages[index]) {
+      setSnackbarMessage("No image available to save");
+      setSnackbarVisible(true);
+      return;
+    }
+
+    try {
+      const recommendation = results.styleRecommendations[index];
+      const favoriteItem = {
+        id: `favorite_${Date.now()}_${index}`,
+        imageUrl: generatedImages[index],
+        itemType: recommendation.itemType,
+        itemDescription: recommendation.itemDescription,
+        potentialColors: recommendation.potentialColors,
+        materialAndPattern: recommendation.materialAndPattern,
+        stylingRationale: recommendation.stylingRationale,
+      };
+
+      const success = await favoritesService.addFavorite(favoriteItem);
+
+      if (success) {
+        setSnackbarMessage("Saved to favorites!");
+      } else {
+        setSnackbarMessage("This item is already in your favorites");
+      }
+      setSnackbarVisible(true);
+    } catch (error) {
+      console.error("Error saving to favorites:", error);
+      setSnackbarMessage("Failed to save to favorites");
+      setSnackbarVisible(true);
+    }
+  };
+
   const renderStyleRecommendations = () => {
     if (
       !results ||
@@ -191,22 +229,32 @@ const StyleScreen = () => {
 
     return results.styleRecommendations.map((item, index) => (
       <View key={index} style={styles.recommendationItemContainer}>
-        {generatedImages[index] ? (
-          <Image
-            source={{ uri: generatedImages[index] }}
-            style={styles.recommendationImage}
-            resizeMode="contain"
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <ActivityIndicator size="large" color={theme.colors.secondary} />
-            <Text style={styles.placeholderText}>
-              {generatingImages
-                ? "Creating your personalized fashion item..."
-                : "Image generation complete"}
-            </Text>
-          </View>
-        )}
+        <View style={styles.imageContainer}>
+          {generatedImages[index] ? (
+            <>
+              <Image
+                source={{ uri: generatedImages[index] }}
+                style={styles.recommendationImage}
+                resizeMode="contain"
+              />
+              <TouchableOpacity
+                style={styles.favoriteButton}
+                onPress={() => saveToFavorites(index)}
+              >
+                <Icon name="heart" size={24} color={theme.colors.primary} />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <ActivityIndicator size="large" color={theme.colors.secondary} />
+              <Text style={styles.placeholderText}>
+                {generatingImages
+                  ? "Creating your personalized fashion item..."
+                  : "Image generation complete"}
+              </Text>
+            </View>
+          )}
+        </View>
 
         <Text style={styles.itemTypeTitle}>{item.itemType}</Text>
         <Text style={styles.itemDescription}>{item.itemDescription}</Text>
@@ -259,10 +307,24 @@ const StyleScreen = () => {
     ));
   };
 
+  const renderFavoritesButton = () => (
+    <Button
+      mode="outlined"
+      icon="heart"
+      onPress={() => navigation.navigate("Favorites")}
+      style={styles.favoritesButton}
+      labelStyle={{ color: theme.colors.primary }}
+    >
+      My Favorites
+    </Button>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <Header />
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.topButtonContainer}>{renderFavoritesButton()}</View>
+
         <Card style={styles.featureCard}>
           <Card.Content>
             <View style={styles.featureHeader}>
@@ -415,6 +477,18 @@ const StyleScreen = () => {
           </View>
         )}
       </ScrollView>
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+        action={{
+          label: "View",
+          onPress: () => navigation.navigate("Favorites"),
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </SafeAreaView>
   );
 };
@@ -641,6 +715,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#8C7A6B", // Using theme's secondary color
     marginRight: 8,
+  },
+  topButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginBottom: 10,
+  },
+  favoritesButton: {
+    borderColor: "#8C7A6B",
+  },
+  imageContainer: {
+    position: "relative",
+  },
+  favoriteButton: {
+    position: "absolute",
+    right: 10,
+    top: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
   },
 });
 

@@ -11,6 +11,7 @@ import StylemorphTheme from "./src/utils/Theme";
 import LoginScreen from "./src/screens/Auth_Screen/LoginScreen";
 import RegisterScreen from "./src/screens/Auth_Screen/RegisterScreen";
 import StyleScreen from "./src/screens/User_Screen/StyleScreen";
+import FavoritesScreen from "./src/screens/User_Screen/FavoritesScreen";
 
 import { initializePocketBase } from "./src/utils/pocketbaseService";
 import ErrorBoundary from "./src/components/ErrorBoundary"; // Import ErrorBoundary
@@ -21,6 +22,7 @@ const AppStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Style" component={StyleScreen} />
+      <Stack.Screen name="Favorites" component={FavoritesScreen} />
     </Stack.Navigator>
   );
 };

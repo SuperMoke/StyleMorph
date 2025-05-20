@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Buffer } from "buffer";
 
-const HUGGING_FACE_API_TOKEN = "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";
+const HUGGING_FACE_API_TOKEN = "API_KEY";
 const HUGGING_FACE_MODEL_ID = "black-forest-labs/FLUX.1-dev";
 const HUGGING_FACE_API_URL = `https://api-inference.huggingface.co/models/${HUGGING_FACE_MODEL_ID}`;
 
